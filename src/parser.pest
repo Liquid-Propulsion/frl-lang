@@ -1,0 +1,61 @@
+// This defines the basic characters allowed.
+alpha_lower = { 'a'..'z' }
+alpha_upper = { 'A'..'Z' }
+alpha = { alpha_lower | alpha_upper }
+digit = { '0'..'9' }
+
+// All funcs must be uppercase: Ex: ACTIVATE_0/ACTIVATE/ACTI1VATE
+// All vars can be upper or lower: solenoid_1/SOLENOID_1/sOLen2oid
+ident_func = @{ !digit ~ (alpha_upper | digit | "_")+ }
+ident_var = @{ !digit ~ (alpha | digit | "_")+ }
+
+// Numeric Types
+int = { digit+ }
+float = { digit+ ~ "." ~ digit+}
+
+// String Type, based on JSON
+string = ${ "\"" ~ string_inner ~ "\"" }
+string_inner = @{ string_char* }
+string_char = {
+    !("\"" | "\\") ~ ANY
+    | "\\" ~ ("\"" | "\\" | "/" | "b" | "f" | "n" | "r" | "t")
+    | "\\" ~ ("u" ~ ASCII_HEX_DIGIT{4})
+}
+
+// Boolean Type
+boolean = { "true" | "false" }
+
+// Numeric Arithmetic
+numeric_arithmetic_values = { ident_var | parentheses | int | float | boolean }
+numberic_arithmetic_operators = { "+" | "-" | "*" | "/" | "**" }
+numeric_arithemtic = { numeric_arithmetic_values ~ numberic_arithmetic_operators ~  numeric_arithmetic_values}
+
+
+// Boolean Operations
+boolean_operators = { ">" | "<" | ">=" | "<=" | "AND" | "OR" | "XOR" }
+
+// Arithmetic Boolean
+arithmetic_values = { ident_var | parentheses | int | float | boolean }
+conditional_arithmetic = { arithmetic_values ~ boolean_operators ~ arithmetic_values }
+conditional = { boolean  | parentheses | conditional_arithmetic }
+
+// Parentheses for Arithmetic and Conditional Operations
+parentheses = ${ "(" ~ (conditional | numeric_arithemtic) ~ ")" }
+
+// Instruction
+instruction = { ident_func ~ "->" ~ (ident_var | digit | string | conditional) ~ ";"}
+
+// Statements
+if_statement = { "IF" ~ conditional ~ "{" ~ script ~ "}" }
+
+// Each line of code either starts a statement, or is an instruction.
+line = { if_statement | instruction }
+
+// A script is a series of lines.
+script = { (line)+ }
+
+// A File has a SOI and EOI.
+file = { SOI ~ script ~ EOI }
+
+// Ignore all whitespace.
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
